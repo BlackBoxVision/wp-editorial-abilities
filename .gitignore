@@ -1,0 +1,6 @@
+/vendor/
+/.wp-env.json.local
+/node_modules/
+/.phpunit.result.cache
+/.vscode/
+.DS_Store

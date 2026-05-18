@@ -1,0 +1,24 @@
+{
+  "name": "blackbox-vision/wp-editorial-abilities",
+  "description": "WordPress Abilities API plugin for editorial workflows and MCP-enabled publishing assistants.",
+  "type": "wordpress-plugin",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.0"
+  },
+  "require-dev": {
+    "wp-coding-standards/wpcs": "^3.1",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+  },
+  "scripts": {
+    "lint": "phpcs",
+    "format": "phpcbf",
+    "syntax": "find . -path ./vendor -prune -o -name '*.php' -print -exec php -l {} \\;"
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  }
+}

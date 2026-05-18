@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/wp-env.json",
+  "core": "https://wordpress.org/wordpress-7.0-RC4.zip",
+  "phpVersion": "8.3",
+  "plugins": [
+    ".",
+    "WordPress/mcp-adapter"
+  ],
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true
+  }
+}
