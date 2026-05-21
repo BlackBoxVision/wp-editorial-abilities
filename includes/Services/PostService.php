@@ -12,7 +12,7 @@ final class PostService
     public function createEditorialDraft(array $input): array|WP_Error
     {
         $post_id = wp_insert_post([
-            'post_author' => get_current_user_id(),
+            'post_author' => $this->resolveAuthor($input),
             'post_title' => sanitize_text_field((string) $input['title']),
             'post_content' => wp_kses_post((string) $input['content']),
             'post_excerpt' => isset($input['excerpt']) ? sanitize_textarea_field((string) $input['excerpt']) : '',
@@ -71,6 +71,13 @@ final class PostService
 
         if (isset($input['excerpt'])) {
             $update['post_excerpt'] = sanitize_textarea_field((string) $input['excerpt']);
+        }
+
+        if (! empty($input['author_id'])) {
+            $author = get_userdata((int) $input['author_id']);
+            if ($author && user_can($author, 'edit_posts')) {
+                $update['post_author'] = (int) $author->ID;
+            }
         }
 
         $result = wp_update_post($update, true);
@@ -193,6 +200,23 @@ final class PostService
             $tags = array_map('sanitize_text_field', array_map('strval', $input['tags']));
             wp_set_post_tags($post_id, $tags, false);
         }
+    }
+
+    private function resolveAuthor(array $input): int
+    {
+        $current = get_current_user_id();
+
+        if (empty($input['author_id'])) {
+            return $current;
+        }
+
+        $author = get_userdata((int) $input['author_id']);
+
+        if ($author && user_can($author, 'edit_posts')) {
+            return (int) $author->ID;
+        }
+
+        return $current;
     }
 
     private function resolveCategory(string $category): int

@@ -8,6 +8,7 @@ use WpEditorialAbilities\Services\EditorialPatternService;
 use WpEditorialAbilities\Services\MediaService;
 use WpEditorialAbilities\Services\PostService;
 use WpEditorialAbilities\Services\SeoService;
+use WpEditorialAbilities\Services\UserService;
 
 final class AbilityRegistrar
 {
@@ -15,6 +16,7 @@ final class AbilityRegistrar
     private MediaService $media;
     private SeoService $seo;
     private EditorialPatternService $patterns;
+    private UserService $users;
 
     public function __construct()
     {
@@ -22,6 +24,7 @@ final class AbilityRegistrar
         $this->media = new MediaService();
         $this->seo = new SeoService();
         $this->patterns = new EditorialPatternService();
+        $this->users = new UserService();
     }
 
     public function registerHooks(): void
@@ -51,6 +54,17 @@ final class AbilityRegistrar
 
     private function registerReadAbilities(): void
     {
+        $this->ability('list-authors', [
+            'label' => __('List Authors', 'wp-editorial-abilities'),
+            'description' => __('List WordPress users who can be assigned as post authors (users with the edit_posts capability). Use this to let the editor choose an author for a draft.', 'wp-editorial-abilities'),
+            'category' => 'editorial-read',
+            'input_schema' => $this->objectSchema(),
+            'output_schema' => $this->arrayOfObjectsSchema(),
+            'execute_callback' => [$this->users, 'listAuthors'],
+            'permission_callback' => [$this, 'canRead'],
+            'meta' => $this->publicMeta(['readonly' => true, 'destructive' => false, 'idempotent' => true]),
+        ]);
+
         $this->ability('list-categories', [
             'label' => __('List Categories', 'wp-editorial-abilities'),
             'description' => __('List public post categories with IDs, names, slugs, parents, and counts.', 'wp-editorial-abilities'),
@@ -146,6 +160,7 @@ final class AbilityRegistrar
                 'title' => ['type' => 'string'],
                 'content' => ['type' => 'string'],
                 'excerpt' => ['type' => 'string'],
+                'author_id' => ['type' => 'integer', 'description' => 'User ID to reassign as post author. Use list-authors first.'],
                 'categories' => ['type' => 'array', 'items' => ['type' => 'string']],
                 'tags' => ['type' => 'array', 'items' => ['type' => 'string']],
             ], ['post_id']),
@@ -182,6 +197,21 @@ final class AbilityRegistrar
             'execute_callback' => [$this->media, 'setFeaturedImage'],
             'permission_callback' => [$this, 'canEditInputPost'],
             'meta' => $this->publicMeta(['readonly' => false, 'destructive' => false, 'idempotent' => true]),
+        ]);
+
+        $this->ability('upload-media-base64', [
+            'label' => __('Upload Media From Base64', 'wp-editorial-abilities'),
+            'description' => __('Upload a file (typically an image the editor shared directly in chat) to the media library from a base64-encoded payload. Returns the attachment ID and URL so it can be used as a featured image or attached to a draft.', 'wp-editorial-abilities'),
+            'category' => 'editorial-write',
+            'input_schema' => $this->objectSchema([
+                'filename' => ['type' => 'string', 'required' => true, 'description' => 'Filename including extension, e.g. cover.png.'],
+                'base64_data' => ['type' => 'string', 'required' => true, 'description' => 'Base64-encoded file contents. May include the data:mime;base64, prefix.'],
+                'description' => ['type' => 'string', 'description' => 'Optional caption / alt text.'],
+            ], ['filename', 'base64_data']),
+            'output_schema' => $this->objectSchema(),
+            'execute_callback' => [$this->media, 'uploadMediaBase64'],
+            'permission_callback' => [$this, 'canUploadFiles'],
+            'meta' => $this->publicMeta(['readonly' => false, 'destructive' => false, 'idempotent' => false]),
         ]);
 
         $this->ability('suggest-internal-links', [
@@ -242,6 +272,11 @@ final class AbilityRegistrar
     public function canCreatePosts(): bool
     {
         return current_user_can('edit_posts');
+    }
+
+    public function canUploadFiles(): bool
+    {
+        return current_user_can('upload_files');
     }
 
     public function canEditInputPost(array $input): bool
@@ -314,6 +349,7 @@ final class AbilityRegistrar
             'title' => ['type' => 'string', 'required' => true],
             'content' => ['type' => 'string', 'required' => true],
             'excerpt' => ['type' => 'string'],
+            'author_id' => ['type' => 'integer', 'description' => 'User ID to assign as post author. Use list-authors first. Falls back to the current MCP user if omitted or invalid.'],
             'categories' => ['type' => 'array', 'items' => ['type' => 'string']],
             'tags' => ['type' => 'array', 'items' => ['type' => 'string']],
             'featured_media_id' => ['type' => 'integer'],
