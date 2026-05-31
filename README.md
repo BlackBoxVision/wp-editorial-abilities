@@ -4,10 +4,14 @@ WordPress plugin that exposes editorial workflows through the WordPress Abilitie
 
 ## Requirements
 
-- WordPress 6.9+; tested target is WordPress 7.0 RC4.
+- WordPress 6.9+; tested against WordPress 7.0 (stable).
 - PHP 8.0+.
-- Official `wordpress/mcp-adapter` plugin for MCP access.
+- Official [`wordpress/mcp-adapter`](https://github.com/WordPress/mcp-adapter) plugin for MCP access.
 - A dedicated WordPress user for MCP clients. Give it only the editorial capabilities it needs.
+
+## Documentation
+
+- [`docs/REPOSITORY-ANATOMY.md`](docs/REPOSITORY-ANATOMY.md) — Codebase structure, boot flow, and where to change things.
 
 ## Abilities
 
@@ -34,7 +38,7 @@ Write abilities:
 
 Publishing and scheduling require `confirm_publish: true` and WordPress publish permissions.
 
-## Local WordPress 7 RC4
+## Local WordPress 7.0
 
 Using `wp-env`:
 
@@ -48,7 +52,7 @@ Using Docker Compose:
 
 ```bash
 docker compose up -d
-docker compose run --rm cli wp core update --version=7.0-RC4 --allow-root
+docker compose run --rm cli wp core update --version=7.0 --allow-root
 docker compose run --rm cli wp core install --url=http://localhost:8080 --title="Editorial Abilities" --admin_user=admin --admin_password=password --admin_email=admin@example.com --allow-root
 docker compose run --rm cli wp plugin activate wp-editorial-abilities --allow-root
 ```
