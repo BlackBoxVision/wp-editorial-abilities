@@ -1,0 +1,78 @@
+name: Plugin Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          npm install -g conventional-changelog-cli
+          current_tag="${GITHUB_REF#refs/tags/}"
+          previous_tag=$(git tag --sort=-v:refname | awk -v current="$current_tag" '$0 != current { print; exit }')
+          if [ -z "$previous_tag" ]; then
+            changelog=$(conventional-changelog -p angular -r 0)
+          else
+            changelog=$(conventional-changelog -p angular --from "$previous_tag" --to "$current_tag")
+          fi
+          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$changelog" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Get Version
+        id: version
+        run: |
+          version="${GITHUB_REF#refs/tags/}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build plugin zip
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          slug="wp-editorial-abilities"
+          archive="${slug}-${version}.zip"
+
+          mkdir -p "dist/${slug}"
+          cp wp-editorial-abilities.php LICENSE README.md "dist/${slug}/"
+          cp -r includes skills "dist/${slug}/"
+
+          (
+            cd dist
+            zip -r "../${archive}" "${slug}"
+          )
+
+          echo "archive=${archive}" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## Install in WordPress
+
+            1. Download **`${{ env.archive }}`** below.
+            2. In wp-admin go to **Plugins → Add New → Upload Plugin**.
+            3. Choose the zip file, click **Install Now**, then **Activate**.
+            4. Install and activate the official [MCP Adapter](https://github.com/WordPress/mcp-adapter) plugin separately.
+
+            ## Changelog
+
+            ${{ steps.changelog.outputs.changelog }}
+          files: ${{ env.archive }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

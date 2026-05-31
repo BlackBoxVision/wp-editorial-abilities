@@ -36,9 +36,11 @@ wp-editorial-abilities/
 ├── skills/
 │   └── generic-editorial-note/  # Optional MCP agent skill (workflow for drafting notes)
 ├── docs/
-│   └── REPOSITORY-ANATOMY.md    # Codebase structure for developers
+│   ├── ABILITIES.md             # Abilities reference and SEO options
+│   └── REPOSITORY-ANATOMY.md    # This file — architecture and codebase layout
 ├── tests/
 │   └── bootstrap.php            # Test bootstrap (loads plugin entry point)
+├── CONTRIBUTING.md              # Local dev, testing, releases
 ├── composer.json                # PHPCS / PHPCompatibility dev tooling
 ├── phpcs.xml.dist               # WordPress coding standards config
 ├── .wp-env.json                 # Local WP 7.0 + MCP Adapter via @wordpress/env
@@ -63,15 +65,4 @@ wp-editorial-abilities/
 | Change taxonomy / pattern analysis | `includes/Services/EditorialPatternService.php` |
 | Adjust MCP agent workflow hints | `skills/generic-editorial-note/SKILL.md` |
 
-## Development tooling
-
-```bash
-composer install          # PHPCS + WordPress Coding Standards
-composer run lint         # phpcs against includes/
-composer run syntax       # php -l on all plugin PHP files
-```
-
-Local environments:
-
-- **`npx @wordpress/env start`** — Uses `.wp-env.json` to spin up WordPress 7.0 with this plugin and [`WordPress/mcp-adapter`](https://github.com/WordPress/mcp-adapter) pre-linked.
-- **`docker compose up -d`** — Standalone MariaDB + WordPress stack; mount the repo as a plugin volume (see [Local WordPress 7.0](../README.md#local-wordpress-70) in the README).
+For local development and release workflows, see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
