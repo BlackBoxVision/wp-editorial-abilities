@@ -1,3 +1,5 @@
+<img src="./docs/banner.png" />
+
 # WP Editorial Abilities
 
 ## What is this?
