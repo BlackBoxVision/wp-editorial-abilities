@@ -6,15 +6,32 @@ WordPress plugin that registers editorial workflow abilities — drafts, media, 
 
 ## Why?
 
-WordPress 7 ships AI assistants inside the editor, but that integration expects **provider API keys** (OpenAI, Anthropic, etc.) billed per token — separate from the flat **$20/month subscriptions** many people already pay for Claude or ChatGPT.
+WordPress 7 introduces AI-powered workflows through the Abilities API and assistant integrations, making it easier than ever to generate and edit content directly from the editor.
 
-This plugin offers an alternative:
+However, generating content is only part of the editorial process.
 
-- **[MCP Adapter](https://github.com/WordPress/mcp-adapter)** exposes WordPress abilities over MCP.
-- **WP Editorial Abilities** (this repo) registers the editorial tools an AI assistant needs.
-- **[Automattic MCP WordPress Remote](https://www.npmjs.com/package/@automattic/mcp-wordpress-remote)** connects your local MCP client to your WordPress site over HTTPS and an application password.
+Most AI assistants can write text, but they do not automatically understand:
 
-Use your existing **Claude Desktop**, **Codex**, or **Cursor** subscription. No extra AI API key is required on the WordPress side.
+- How your site structures articles
+- Which editorial patterns are commonly used
+- What content already exists
+- Which internal links should be added
+- How SEO metadata is managed
+- How drafts move through your publishing workflow
+
+WP Editorial Abilities extends the WordPress Abilities API with a set of editorial capabilities designed to give AI assistants access to that context.
+
+Instead of generating content in isolation, agents can:
+
+- Analyze existing content and category patterns
+- Discover authors, categories, tags, and media assets
+- Suggest internal links
+- Manage SEO metadata
+- Create, update, schedule, and publish drafts
+
+Combined with the official MCP Adapter, these abilities become available to MCP-compatible assistants such as Claude Desktop, Codex, and Cursor.
+
+The goal is not simply to help AI write content, but to help AI understand how content is created and managed on your WordPress site.
 
 ## How it works
 
