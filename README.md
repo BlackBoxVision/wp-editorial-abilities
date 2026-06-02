@@ -162,6 +162,53 @@ Run these prompts in a new conversation and confirm results in wp-admin under **
 | `command not found: npx` | Node.js not installed | Install Node.js LTS and restart |
 | Categories work, drafts fail | Insufficient permissions | Use **Editor** role for the MCP user |
 | SEO not saved | No SEO plugin | Activate Yoast SEO or Rank Math |
+| Connector shows "Connection Failed" but appears connected; tools never load; `404` in the logs | `WP_API_URL` points to a **headless front-end**, not to WordPress | Point `WP_API_URL` to the real WordPress backend — see [Headless WordPress: pointing at the wrong domain](#headless-wordpress-pointing-at-the-wrong-domain) |
+
+### Headless WordPress: pointing at the wrong domain
+
+On a headless setup, the public domain serves a separate front-end (Next.js, Astro, etc.) and WordPress lives on a different host (commonly a `wp.` subdomain). If `WP_API_URL` points at the **front-end**, `/wp-json/` does not exist there, so the front-end returns **its own 404** — not a WordPress REST error.
+
+The Automattic bridge still starts the local session (so the connector looks "connected", often with `serverInfo: "Connection Failed"`), but the upstream `tools/list` fails with `404` and no tools ever load. It never reached WordPress.
+
+**How to recognize it:** open the MCP log (see [Where the logs live](#where-the-logs-live)) and look at the body of the 404. If it contains `__NEXT_DATA__`, `/_error`, MUI markup, or `<link rel="preconnect" href="https://wp.yoursite.com">`, you are hitting the headless front-end, not WordPress.
+
+**Fix:** set `WP_API_URL` to the real backend, then fully restart the client:
+
+```json
+"WP_API_URL": "https://wp.yoursite.com/wp-json/mcp/mcp-adapter-default-server"
+```
+
+**Confirm the backend before restarting** (replace the host with your own):
+
+```bash
+# Should return WordPress REST JSON (name, namespaces, …), HTTP 200
+curl -s -o /dev/null -w "%{http_code}\n" "https://wp.yoursite.com/wp-json/"
+
+# The MCP endpoint, unauthenticated:
+#   401 rest_forbidden  → route exists, MCP Adapter is active (good — auth gate)
+#   404 rest_no_route   → MCP Adapter / this plugin not active on that instance
+curl -s "https://wp.yoursite.com/wp-json/mcp/mcp-adapter-default-server"
+```
+
+If, after fixing the domain, you still get a `404` — but now a *WordPress* `rest_no_route` 404 instead of the front-end's — the problem shifts to the plugins not being active on that WordPress instance.
+
+### Where the logs live
+
+Claude Desktop writes MCP logs to:
+
+- **macOS:** `~/Library/Logs/Claude/`
+- **Windows:** `%APPDATA%\Claude\logs\`
+
+The most useful files for this connector:
+
+- `mcp-server-wp-editorial.log` — the bridge for the `wp-editorial` server (filename follows the server key in your config; rename accordingly if you used a different key).
+- `mcp.log` — general MCP client log across all servers.
+
+Quick tail on macOS:
+
+```bash
+tail -f ~/Library/Logs/Claude/mcp-server-wp-editorial.log
+```
 
 ## Further reading
 
