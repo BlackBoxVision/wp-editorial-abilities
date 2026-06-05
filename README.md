@@ -45,7 +45,7 @@ flowchart TB
   editorialAbilities["WP Editorial Abilities"]
   wordpress["WordPress core"]
 
-  mcpClient -->|"HTTPS + application password"| remoteBridge
+  mcpClient -->|"HTTPS + user password"| remoteBridge
   remoteBridge --> mcpAdapter
   mcpAdapter --> editorialAbilities
   editorialAbilities --> wordpress
@@ -57,7 +57,7 @@ See [`docs/ABILITIES.md`](docs/ABILITIES.md) for the full list of registered abi
 
 - WordPress **6.9+** (tested against 7.0 stable).
 - PHP **8.0+**.
-- Site served over **HTTPS** (required for application password authentication).
+- Site served over **HTTPS** (required for user password authentication).
 - Official [`wordpress/mcp-adapter`](https://github.com/WordPress/mcp-adapter) plugin installed and active.
 - An MCP client: Claude Desktop, Codex, or Cursor.
 - Node.js LTS (runs the Automattic MCP remote bridge via `npx`).
@@ -86,20 +86,20 @@ If your host provides staging, complete the setup there first.
 - Red notice ("requires WordPress 6.9…") — update WordPress first.
 - Yellow notice ("install the MCP Adapter…") — activate MCP Adapter, then deactivate and reactivate this plugin.
 
-### 2. Create an MCP user and application password
+### 2. Create an MCP user
 
 Do not use your administrator account for MCP access.
 
 1. **Users → Add New** — create a user such as `claude-editorial` with the **Editor** role (use **Author** if you want drafts only, without publish permission).
-2. Open that user's profile → **Application Passwords** → create one named e.g. `MCP Client` → copy the password immediately.
+2. Set a strong password for that user and copy it immediately.
 
 Save these values:
 
 | Setting | Example |
 | --- | --- |
-| Site URL | `https://yoursite.com` |
-| Username | `claude-editorial` |
-| Application password | `abcd EFGH 1234 wxyz 5678 90ab` |
+| Site URL | `https://your-site.com` |
+| Username | `your-wp-username` |
+| User password | `your-wp-user-password` |
 
 ### 3. Connect your MCP client
 
@@ -117,9 +117,9 @@ Install [Node.js LTS](https://nodejs.org) if you do not have it. The bridge runs
       "command": "npx",
       "args": ["-y", "@automattic/mcp-wordpress-remote@latest"],
       "env": {
-        "WP_API_URL": "https://yoursite.com/wp-json/mcp/mcp-adapter-default-server",
-        "WP_API_USERNAME": "claude-editorial",
-        "WP_API_PASSWORD": "abcd EFGH 1234 wxyz 5678 90ab"
+        "WP_API_URL": "https://your-site.com/wp-json/mcp/mcp-adapter-default-server",
+        "WP_API_USERNAME": "your-wp-username",
+        "WP_API_PASSWORD": "your-wp-user-password"
       }
     }
   }
@@ -148,7 +148,7 @@ Run these prompts in a new conversation and confirm results in wp-admin under **
 
 - Use a dedicated MCP user with editorial permissions only — not an administrator.
 - Publish and schedule abilities require explicit confirmation (`confirm_publish: true`).
-- Revoke access anytime: **Users → [MCP user] → Application Passwords → Revoke**.
+- Revoke access anytime: **Users → [MCP user] → reset or delete the user**.
 - Review drafts in wp-admin before publishing.
 
 ## Troubleshooting
@@ -158,7 +158,8 @@ Run these prompts in a new conversation and confirm results in wp-admin under **
 | Red notice: "requires WordPress 6.9…" | WordPress too old | Update WordPress |
 | Yellow notice: "install the MCP Adapter…" | MCP Adapter missing | Install and activate MCP Adapter first |
 | MCP connector missing | Invalid JSON or client not restarted | Validate config JSON; fully quit and reopen the client |
-| 401 / unauthorized | Wrong password or HTTP URL | Regenerate application password; use `https://` |
+| 401 / unauthorized | Wrong password or HTTP URL | Check user password; use `https://` |
+| 500 / `incorrect_password` — `Connection Failed`, tools never load | Application Password used instead of user password | Replace `WP_API_PASSWORD` with the user's actual login password, not a WordPress Application Password |
 | `command not found: npx` | Node.js not installed | Install Node.js LTS and restart |
 | Categories work, drafts fail | Insufficient permissions | Use **Editor** role for the MCP user |
 | SEO not saved | No SEO plugin | Activate Yoast SEO or Rank Math |
