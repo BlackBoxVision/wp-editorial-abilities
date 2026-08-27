@@ -121,6 +121,77 @@ final class MediaService
         return $this->mediaResponse($attachment);
     }
 
+    public function uploadMediaFromFile(array $input): array|WP_Error
+    {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+
+        $file_path = isset($input['file_path']) ? (string) $input['file_path'] : '';
+        $alt_text = isset($input['alt_text']) ? sanitize_text_field((string) $input['alt_text']) : '';
+        $caption = isset($input['caption']) ? sanitize_text_field((string) $input['caption']) : '';
+
+        if ($file_path === '' || ! is_readable($file_path)) {
+            return new WP_Error(
+                'wpea_file_not_readable',
+                sprintf(
+                    /* translators: %s: file path */
+                    __('Could not read file at "%s". This ability requires the file to be accessible from the environment where WordPress abilities execute — see the architecture note in this issue if the file lives on the MCP client instead.', 'wp-editorial-abilities'),
+                    $file_path
+                )
+            );
+        }
+
+        $filename = sanitize_file_name(basename($file_path));
+        $contents = file_get_contents($file_path);
+
+        if ($contents === false) {
+            return new WP_Error(
+                'wpea_file_not_readable',
+                sprintf(
+                    /* translators: %s: file path */
+                    __('Could not read file at "%s". This ability requires the file to be accessible from the environment where WordPress abilities execute — see the architecture note in this issue if the file lives on the MCP client instead.', 'wp-editorial-abilities'),
+                    $file_path
+                )
+            );
+        }
+
+        $upload = wp_upload_bits($filename, null, $contents);
+
+        if (! empty($upload['error'])) {
+            return new WP_Error('wpea_upload_failed', (string) $upload['error']);
+        }
+
+        $file = $upload['file'];
+        $filetype = wp_check_filetype(basename($file), null);
+
+        $attachment_id = wp_insert_attachment([
+            'guid' => $upload['url'],
+            'post_mime_type' => $filetype['type'],
+            'post_title' => sanitize_text_field(pathinfo($filename, PATHINFO_FILENAME)),
+            'post_excerpt' => $caption,
+            'post_status' => 'inherit',
+        ], $file, 0, true);
+
+        if (is_wp_error($attachment_id)) {
+            return $attachment_id;
+        }
+
+        $metadata = wp_generate_attachment_metadata($attachment_id, $file);
+        wp_update_attachment_metadata($attachment_id, $metadata);
+
+        if ($alt_text !== '') {
+            update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt_text);
+        }
+
+        $attachment = get_post($attachment_id);
+
+        if (! $attachment instanceof WP_Post) {
+            return new WP_Error('wpea_attachment_missing', __('Attachment could not be loaded after upload.', 'wp-editorial-abilities'));
+        }
+
+        return $this->mediaResponse($attachment);
+    }
+
     public function setFeaturedImage(array $input): array|WP_Error
     {
         $post_id = (int) $input['post_id'];
