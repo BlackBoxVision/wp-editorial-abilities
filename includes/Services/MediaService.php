@@ -127,33 +127,41 @@ final class MediaService
         require_once ABSPATH . 'wp-admin/includes/image.php';
 
         $file_path = isset($input['file_path']) ? (string) $input['file_path'] : '';
-        $description = isset($input['description']) ? sanitize_text_field((string) $input['description']) : '';
+        $alt_text = isset($input['alt_text']) ? sanitize_text_field((string) $input['alt_text']) : '';
+        $caption = isset($input['caption']) ? sanitize_text_field((string) $input['caption']) : '';
 
-        if ($file_path === '') {
-            return new WP_Error('wpea_missing_file_path', __('file_path is required.', 'wp-editorial-abilities'));
+        if ($alt_text === '' && $caption === '' && isset($input['description'])) {
+            $fallback = sanitize_text_field((string) $input['description']);
+            $alt_text = $fallback;
+            $caption = $fallback;
         }
 
-        // Validar que el archivo existe
-        if (! file_exists($file_path)) {
-            return new WP_Error('wpea_file_not_found', sprintf(__('File not found: %s', 'wp-editorial-abilities'), $file_path));
+        if ($file_path === '' || ! is_readable($file_path)) {
+            return new WP_Error(
+                'wpea_file_not_readable',
+                sprintf(
+                    /* translators: %s: file path */
+                    __('Could not read file at "%s". This ability requires the file to be accessible from the environment where WordPress abilities execute — see the architecture note in this issue if the file lives on the MCP client instead.', 'wp-editorial-abilities'),
+                    $file_path
+                )
+            );
         }
 
-        // Validar que es readable
-        if (! is_readable($file_path)) {
-            return new WP_Error('wpea_file_not_readable', sprintf(__('File is not readable: %s', 'wp-editorial-abilities'), $file_path));
+        $filename = sanitize_file_name(basename($file_path));
+        $contents = file_get_contents($file_path);
+
+        if ($contents === false) {
+            return new WP_Error(
+                'wpea_file_not_readable',
+                sprintf(
+                    /* translators: %s: file path */
+                    __('Could not read file at "%s". This ability requires the file to be accessible from the environment where WordPress abilities execute — see the architecture note in this issue if the file lives on the MCP client instead.', 'wp-editorial-abilities'),
+                    $file_path
+                )
+            );
         }
 
-        // Obtener el contenido del archivo
-        $file_contents = file_get_contents($file_path);
-        if ($file_contents === false) {
-            return new WP_Error('wpea_file_read_error', sprintf(__('Could not read file: %s', 'wp-editorial-abilities'), $file_path));
-        }
-
-        // Usar filename original si es posible
-        $filename = basename($file_path);
-
-        // Usar wp_upload_bits igual que base64
-        $upload = wp_upload_bits($filename, null, $file_contents);
+        $upload = wp_upload_bits($filename, null, $contents);
 
         if (! empty($upload['error'])) {
             return new WP_Error('wpea_upload_failed', (string) $upload['error']);
@@ -166,8 +174,7 @@ final class MediaService
             'guid' => $upload['url'],
             'post_mime_type' => $filetype['type'],
             'post_title' => sanitize_text_field(pathinfo($filename, PATHINFO_FILENAME)),
-            'post_content' => $description,
-            'post_excerpt' => $description,
+            'post_excerpt' => $caption,
             'post_status' => 'inherit',
         ], $file, 0, true);
 
@@ -178,8 +185,8 @@ final class MediaService
         $metadata = wp_generate_attachment_metadata($attachment_id, $file);
         wp_update_attachment_metadata($attachment_id, $metadata);
 
-        if ($description !== '') {
-            update_post_meta($attachment_id, '_wp_attachment_image_alt', $description);
+        if ($alt_text !== '') {
+            update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt_text);
         }
 
         $attachment = get_post($attachment_id);

@@ -172,7 +172,10 @@ final class AbilityRegistrar
 
         $this->ability('attach-images-to-draft', [
             'label' => __('Attach Images to Draft', 'wp-editorial-abilities'),
-            'description' => __('Attach existing media IDs or sideload image URLs to an editable post.', 'wp-editorial-abilities'),
+            'description' => __(
+                'Attach existing media IDs or sideload publicly accessible image URLs to an editable post. Use image_urls when the image is already hosted on the internet (e.g. the featured image from a source article). Do NOT use image_urls for files the editor pasted or uploaded locally in the chat — use upload-media-file instead.',
+                'wp-editorial-abilities'
+            ),
             'category' => 'editorial-write',
             'input_schema' => $this->objectSchema([
                 'post_id' => ['type' => 'integer', 'required' => true],
@@ -201,7 +204,10 @@ final class AbilityRegistrar
 
         $this->ability('upload-media-base64', [
             'label' => __('Upload Media From Base64', 'wp-editorial-abilities'),
-            'description' => __('Upload a file (typically an image the editor shared directly in chat) to the media library from a base64-encoded payload. Returns the attachment ID and URL so it can be used as a featured image or attached to a draft.', 'wp-editorial-abilities'),
+            'description' => __(
+                'Upload a small file to the media library from an already-encoded base64 payload. Fallback only — prefer upload-media-file for local files and attach-images-to-draft with image_urls for public URLs. Do NOT base64-encode large local files inside a tool call.',
+                'wp-editorial-abilities'
+            ),
             'category' => 'editorial-write',
             'input_schema' => $this->objectSchema([
                 'filename' => ['type' => 'string', 'required' => true, 'description' => 'Filename including extension, e.g. cover.png.'],
@@ -216,11 +222,15 @@ final class AbilityRegistrar
 
         $this->ability('upload-media-file', [
             'label' => __('Upload Media From File Path', 'wp-editorial-abilities'),
-            'description' => __('Upload a file from a local file path to the media library. Use this when you have a file on disk. Returns the attachment ID and URL so it can be used as a featured image or attached to a draft.', 'wp-editorial-abilities'),
+            'description' => __(
+                'Upload a file from a local file path to the media library. Use this when the image is a local file with no public URL (e.g. one the editor pasted or uploaded directly in the conversation). Returns the attachment ID and URL. Do NOT use this for images that already have a public URL (use attach-images-to-draft with image_urls instead), and do NOT try to base64-encode the file for this ability.',
+                'wp-editorial-abilities'
+            ),
             'category' => 'editorial-write',
             'input_schema' => $this->objectSchema([
-                'file_path' => ['type' => 'string', 'required' => true, 'description' => 'Absolute or relative file path to upload, e.g. /tmp/image.png or ./uploads/photo.jpg'],
-                'description' => ['type' => 'string', 'description' => 'Optional caption / alt text.'],
+                'file_path' => ['type' => 'string', 'required' => true, 'description' => 'Absolute or relative file path accessible from wherever this ability executes, e.g. /tmp/image.png.'],
+                'alt_text' => ['type' => 'string'],
+                'caption' => ['type' => 'string'],
             ], ['file_path']),
             'output_schema' => $this->objectSchema(),
             'execute_callback' => [$this->media, 'uploadMediaFromFile'],

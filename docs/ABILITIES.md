@@ -25,9 +25,10 @@ Category: `editorial-write`.
 | --- | --- |
 | `create-editorial-draft` | Create a draft from title, content, categories, tags, media, SEO |
 | `update-editorial-draft` | Update an existing draft or pending post |
-| `attach-images-to-draft` | Attach media IDs or sideload image URLs to a post |
+| `attach-images-to-draft` | Attach media IDs or sideload publicly accessible image URLs to a post |
 | `set-featured-image` | Set an attachment as the featured image |
-| `upload-media-base64` | Upload a file from a base64 payload to the media library |
+| `upload-media-base64` | Upload a small file from a base64 payload (fallback for tiny payloads only) |
+| `upload-media-file` | Upload a file from a local file path (preferred for editor-attached images) |
 | `suggest-internal-links` | Suggest existing posts to link from a draft |
 | `optimize-seo-metadata` | Write Yoast and/or Rank Math SEO metadata |
 | `schedule-post` | Schedule a post for future publication |
@@ -37,7 +38,7 @@ Category: `editorial-write`.
 
 - Read abilities: `edit_posts`.
 - Draft creation: `edit_posts`.
-- Media upload (`upload-media-base64`): `upload_files`.
+- Media upload (`upload-media-base64`, `upload-media-file`): `upload_files`.
 - Edit abilities: `edit_post` on the target post ID.
 - Publish / schedule: `edit_post` + `publish_posts` on the target post ID.
 
@@ -57,3 +58,20 @@ Category: `editorial-write`.
 | `both` | Write both sets of meta fields |
 
 Supported fields include SEO title, meta description, focus keywords, canonical URL, and Open Graph / Twitter metadata.
+
+## Image upload paths
+
+Three abilities cover different image sources. Choose based on where the image lives — do not base64-encode local files inside tool calls.
+
+| Scenario | Ability | Input |
+| --- | --- | --- |
+| Image already on the public web | `attach-images-to-draft` | `image_urls` |
+| Local file (editor pasted or attached in chat) | `upload-media-file` | `file_path` |
+| Tiny payload already available as base64 | `upload-media-base64` | `base64_data` |
+
+Typical flow for a local editor image:
+
+1. `upload-media-file` with `file_path` (and optional `alt_text` / `caption`) → returns `media_id`.
+2. `set-featured-image` or `attach-images-to-draft` with that `media_id`.
+
+**Remote WordPress + local MCP client:** `file_path` must be readable where the ability callback runs. When WordPress is remote and the file is on the editor's machine, the MCP proxy must intercept `upload-media-file` and upload the binary directly (e.g. to `/wp-json/wp/v2/media`) before attaching. See [issue #1](https://github.com/BlackBoxVision/wp-editorial-abilities/issues/1).
