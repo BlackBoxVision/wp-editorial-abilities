@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP Editorial Abilities
  * Description: Editorial workflow abilities for WordPress Abilities API and MCP Adapter.
- * Version: 0.1.0
+ * Version: 0.2.0
  * Requires at least: 6.9
  * Requires PHP: 8.0
  * Author: BlackBox Vision
@@ -18,7 +18,7 @@ if (! defined('ABSPATH')) {
 
 define('WPEA_PLUGIN_FILE', __FILE__);
 define('WPEA_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('WPEA_PLUGIN_VERSION', '0.1.0');
+define('WPEA_PLUGIN_VERSION', '0.2.0');
 
 spl_autoload_register(static function (string $class): void {
     $prefix = 'WpEditorialAbilities\\';
