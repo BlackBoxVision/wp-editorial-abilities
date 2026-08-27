@@ -121,6 +121,76 @@ final class MediaService
         return $this->mediaResponse($attachment);
     }
 
+    public function uploadMediaFromFile(array $input): array|WP_Error
+    {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/image.php';
+
+        $file_path = isset($input['file_path']) ? (string) $input['file_path'] : '';
+        $description = isset($input['description']) ? sanitize_text_field((string) $input['description']) : '';
+
+        if ($file_path === '') {
+            return new WP_Error('wpea_missing_file_path', __('file_path is required.', 'wp-editorial-abilities'));
+        }
+
+        // Validar que el archivo existe
+        if (! file_exists($file_path)) {
+            return new WP_Error('wpea_file_not_found', sprintf(__('File not found: %s', 'wp-editorial-abilities'), $file_path));
+        }
+
+        // Validar que es readable
+        if (! is_readable($file_path)) {
+            return new WP_Error('wpea_file_not_readable', sprintf(__('File is not readable: %s', 'wp-editorial-abilities'), $file_path));
+        }
+
+        // Obtener el contenido del archivo
+        $file_contents = file_get_contents($file_path);
+        if ($file_contents === false) {
+            return new WP_Error('wpea_file_read_error', sprintf(__('Could not read file: %s', 'wp-editorial-abilities'), $file_path));
+        }
+
+        // Usar filename original si es posible
+        $filename = basename($file_path);
+
+        // Usar wp_upload_bits igual que base64
+        $upload = wp_upload_bits($filename, null, $file_contents);
+
+        if (! empty($upload['error'])) {
+            return new WP_Error('wpea_upload_failed', (string) $upload['error']);
+        }
+
+        $file = $upload['file'];
+        $filetype = wp_check_filetype(basename($file), null);
+
+        $attachment_id = wp_insert_attachment([
+            'guid' => $upload['url'],
+            'post_mime_type' => $filetype['type'],
+            'post_title' => sanitize_text_field(pathinfo($filename, PATHINFO_FILENAME)),
+            'post_content' => $description,
+            'post_excerpt' => $description,
+            'post_status' => 'inherit',
+        ], $file, 0, true);
+
+        if (is_wp_error($attachment_id)) {
+            return $attachment_id;
+        }
+
+        $metadata = wp_generate_attachment_metadata($attachment_id, $file);
+        wp_update_attachment_metadata($attachment_id, $metadata);
+
+        if ($description !== '') {
+            update_post_meta($attachment_id, '_wp_attachment_image_alt', $description);
+        }
+
+        $attachment = get_post($attachment_id);
+
+        if (! $attachment instanceof WP_Post) {
+            return new WP_Error('wpea_attachment_missing', __('Attachment could not be loaded after upload.', 'wp-editorial-abilities'));
+        }
+
+        return $this->mediaResponse($attachment);
+    }
+
     public function setFeaturedImage(array $input): array|WP_Error
     {
         $post_id = (int) $input['post_id'];
