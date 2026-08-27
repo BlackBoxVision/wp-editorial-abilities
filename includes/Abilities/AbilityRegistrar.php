@@ -214,6 +214,20 @@ final class AbilityRegistrar
             'meta' => $this->publicMeta(['readonly' => false, 'destructive' => false, 'idempotent' => false]),
         ]);
 
+        $this->ability('upload-media-file', [
+            'label' => __('Upload Media From File Path', 'wp-editorial-abilities'),
+            'description' => __('Upload a file from a local file path to the media library. Use this when you have a file on disk. Returns the attachment ID and URL so it can be used as a featured image or attached to a draft.', 'wp-editorial-abilities'),
+            'category' => 'editorial-write',
+            'input_schema' => $this->objectSchema([
+                'file_path' => ['type' => 'string', 'required' => true, 'description' => 'Absolute or relative file path to upload, e.g. /tmp/image.png or ./uploads/photo.jpg'],
+                'description' => ['type' => 'string', 'description' => 'Optional caption / alt text.'],
+            ], ['file_path']),
+            'output_schema' => $this->objectSchema(),
+            'execute_callback' => [$this->media, 'uploadMediaFromFile'],
+            'permission_callback' => [$this, 'canUploadFiles'],
+            'meta' => $this->publicMeta(['readonly' => false, 'destructive' => false, 'idempotent' => false]),
+        ]);
+
         $this->ability('suggest-internal-links', [
             'label' => __('Suggest Internal Links', 'wp-editorial-abilities'),
             'description' => __('Suggest existing posts to link from a draft based on query text and category.', 'wp-editorial-abilities'),
