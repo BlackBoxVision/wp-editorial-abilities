@@ -228,7 +228,7 @@ final class AbilityRegistrar
             ),
             'category' => 'editorial-write',
             'input_schema' => $this->objectSchema([
-                'file_path' => ['type' => 'string', 'required' => true, 'description' => 'Absolute path to the file, accessible from wherever this ability executes.'],
+                'file_path' => ['type' => 'string', 'required' => true, 'description' => 'Absolute or relative file path accessible from wherever this ability executes, e.g. /tmp/image.png.'],
                 'alt_text' => ['type' => 'string'],
                 'caption' => ['type' => 'string'],
             ], ['file_path']),

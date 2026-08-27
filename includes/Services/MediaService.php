@@ -130,6 +130,12 @@ final class MediaService
         $alt_text = isset($input['alt_text']) ? sanitize_text_field((string) $input['alt_text']) : '';
         $caption = isset($input['caption']) ? sanitize_text_field((string) $input['caption']) : '';
 
+        if ($alt_text === '' && $caption === '' && isset($input['description'])) {
+            $fallback = sanitize_text_field((string) $input['description']);
+            $alt_text = $fallback;
+            $caption = $fallback;
+        }
+
         if ($file_path === '' || ! is_readable($file_path)) {
             return new WP_Error(
                 'wpea_file_not_readable',
